@@ -470,7 +470,7 @@ fun! Align#Align(hasctrl,...) range
    let vmode= visualmode()
 "   call Decho("vmode=".vmode)
    if vmode == "\<c-v>"
-    let ragged   = ( col("'>") > s:Strlen(getline("'>")) || col("'<") > s:Strlen(getline("'<")) )
+    let ragged   = ( col("'>") > strdisplaywidth(getline("'>")) || col("'<") > strdisplaywidth(getline("'<")) )
    else
 	let ragged= 1
    endif
@@ -564,7 +564,7 @@ fun! Align#Align(hasctrl,...) range
 	endif
 
     " Extract visual-block selected text (init bgntxt, endtxt)
-     let txtlen= s:Strlen(txt)
+     let txtlen= strdisplaywidth(txt)
     if begcol > 0
 	 " Record text to left of selected area
      let bgntxt= strpart(txt,0,begcol)
@@ -688,7 +688,7 @@ fun! Align#Align(hasctrl,...) range
 	    let field = bgntxt.field
 	    let bgntxt= ""
 	   endif
-	   let fieldlen   = s:Strlen(field)
+	   let fieldlen   = strdisplaywidth(field)
 	   let sFieldSize = "FieldSize_".ifield
 	   if !exists(sFieldSize)
 	    let FieldSize_{ifield}= fieldlen
@@ -722,7 +722,7 @@ fun! Align#Align(hasctrl,...) range
 		let prepad = 0
 		let postpad= 0
 	   endif
-	   let fieldlen   = s:Strlen(field)
+	   let fieldlen   = strdisplaywidth(field)
 	   let sep        = s:MakeSpace(prepad).strpart(txt,endfield,sepfield-endfield).s:MakeSpace(postpad)
 	   if seplen < SepSize_{ifield}
 		if alignsepop == "<"
@@ -910,7 +910,7 @@ fun! Align#AlignReplaceQuotedSpaces()
 "  call Dfunc("Align#AlignReplaceQuotedSpaces()")
 
   let l:line          = getline(line("."))
-  let l:linelen      = s:Strlen(l:line)
+  let l:linelen      = strdisplaywidth(l:line)
   let l:startingPos   = 0
   let l:startQuotePos = 0
   let l:endQuotePos   = 0
@@ -967,7 +967,7 @@ fun! s:QArgSplitter(qarg)
 "   call Decho("handle quoted arguments: args<".args.">")
    while args != ""
 	let iarg   = 0
-	let arglen = strlen(args)
+	let arglen = strdisplaywidth(args)
 "	call Decho(".args[".iarg."]<".args[iarg]."> arglen=".arglen)
 	" find index to first not-escaped '"'
 "	call Decho("find index to first not-escaped \"")
@@ -988,7 +988,7 @@ fun! s:QArgSplitter(qarg)
 	  let qarglist= qarglist + split(strpart(args,0,iarg))
 	 endif
 	 let args    = strpart(args,iarg)
-	 let arglen  = strlen(args)
+	 let arglen  = strdisplaywidth(args)
 
 	elseif iarg < arglen && args[0] == '"'
 	 " handle "quoted" section
@@ -1026,52 +1026,52 @@ fun! s:QArgSplitter(qarg)
 endfun
 
 " ---------------------------------------------------------------------
-" s:Strlen: this function returns the length of a string, even if its {{{1
-"           using two-byte etc characters.
-"           Currently, its only used if g:Align_xstrlen is set to a
-"           nonzero value.  Solution from Nicolai Weibull, vim docs
-"           (:help strlen()), Tony Mechelynck, and my own invention.
-fun! s:Strlen(x)
-"  call Dfunc("s:Strlen(x<".a:x."> g:Align_xstrlen=".g:Align_xstrlen)
+"" s:Strlen: this function returns the length of a string, even if its {{{1
+""           using two-byte etc characters.
+""           Currently, its only used if g:Align_xstrlen is set to a
+""           nonzero value.  Solution from Nicolai Weibull, vim docs
+""           (:help strlen()), Tony Mechelynck, and my own invention.
+"fun! s:Strlen(x)
+""  call Dfunc("s:Strlen(x<".a:x."> g:Align_xstrlen=".g:Align_xstrlen)
 
-  if type(g:Align_xstrlen) == 1
-   " allow user to specify a function to compute the string length
-   exe "let ret= ".g:Align_xstrlen."('".substitute(a:x,"'","''","g")."')"
+  "if type(g:Align_xstrlen) == 1
+   "" allow user to specify a function to compute the string length
+   "exe "let ret= ".g:Align_xstrlen."('".substitute(a:x,"'","''","g")."')"
 
-  elseif g:Align_xstrlen == 1
-   " number of codepoints (Latin a + combining circumflex is two codepoints)
-   " (comment from TM, solution from NW)
-   let ret= strlen(substitute(a:x,'.','c','g'))
+  "elseif g:Align_xstrlen == 1
+   "" number of codepoints (Latin a + combining circumflex is two codepoints)
+   "" (comment from TM, solution from NW)
+   "let ret= strdisplaywidth(substitute(a:x,'.','c','g'))
 
-  elseif g:Align_xstrlen == 2
-   " number of spacing codepoints (Latin a + combining circumflex is one spacing
-   " codepoint; a hard tab is one; wide and narrow CJK are one each; etc.)
-   " (comment from TM, solution from TM)
-   let ret=strlen(substitute(a:x, '.\Z', 'x', 'g'))
+  "elseif g:Align_xstrlen == 2
+   "" number of spacing codepoints (Latin a + combining circumflex is one spacing
+   "" codepoint; a hard tab is one; wide and narrow CJK are one each; etc.)
+   "" (comment from TM, solution from TM)
+   "let ret=strdisplaywidth(substitute(a:x, '.\Z', 'x', 'g'))
 
-  elseif g:Align_xstrlen == 3
-   " virtual length (counting, for instance, tabs as anything between 1 and
-   " 'tabstop', wide CJK as 2 rather than 1, Arabic alif as zero when immediately
-   " preceded by lam, one otherwise, etc.)
-   " (comment from TM, solution from me)
-   let modkeep= &l:mod
-   exe "norm! o\<esc>"
-   call setline(line("."),a:x)
-   let ret= virtcol("$") - 1
-   d
-   let &l:mod= modkeep
+  "elseif g:Align_xstrlen == 3
+   "" virtual length (counting, for instance, tabs as anything between 1 and
+   "" 'tabstop', wide CJK as 2 rather than 1, Arabic alif as zero when immediately
+   "" preceded by lam, one otherwise, etc.)
+   "" (comment from TM, solution from me)
+   "let modkeep= &l:mod
+   "exe "norm! o\<esc>"
+   "call setline(line("."),a:x)
+   "let ret= virtcol("$") - 1
+   "d
+   "let &l:mod= modkeep
 
-  else
-   " at least give a decent default
-   if v:version >= 703
-	let ret= strdisplaywidth(a:x)
-   else
-    let ret= strlen(a:x)
-   endif
-  endif
-"  call Dret("s:Strlen ".ret)
-  return ret
-endfun
+  "else
+   "" at least give a decent default
+   "if v:version >= 703
+	"let ret= strdisplaywidth(a:x)
+   "else
+    "let ret= strdisplaywidth(a:x)
+   "endif
+  "endif
+""  call Dret("s:Strlen ".ret)
+  "return ret
+"endfun
 
 " ---------------------------------------------------------------------
 " s:SaveUserOptions: {{{1
